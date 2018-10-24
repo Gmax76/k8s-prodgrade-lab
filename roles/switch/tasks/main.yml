@@ -1,0 +1,95 @@
+---
+- name: Set Validation Facts
+  connection: local
+  set_fact:
+    loopbackprefix_invalid: "{{ loopbackprefix|ipsubnet == loopbackprefix }}"
+    p2pprefix_invalid: "{{ p2pprefix|ipsubnet == p2pprefix }}"
+    p2pprefix_insufficient: "{{ (p2pprefix|ipaddr('size') / p2pprefix|ipsubnet(p2plength, 0)|ipaddr('size')) < (maxspines * leaves) }}"
+
+- name: Data Model Validation
+  connection: local
+  run_once: True
+  assert:
+    that:
+      - "maxspines|int(-1) != -1"
+      - "leaves|int(-1) != -1"
+      - "spines|int(-1) != -1"
+      - "maxspines > 0"
+      - "spines > 0"
+      - "spines <= maxspines"
+      - "leaves > 0"
+      - "baseasn is defined"
+      - "p2plength <= 31"
+      - "leafprefix is defined"
+      - "spineprefix is defined"
+      - "firstuplink|int(-1) != -1"
+      - "firstuplink > 0"
+      - "loopbackint|int(-1) != -1"
+      - "loopbackint >= 0"
+      - "loopbackprefix_invalid != false"
+      - "p2pprefix_invalid != false"
+      - "p2pprefix_insufficient == false"
+    msg: "Validation Failed"
+
+#- name: Generate Device YAML File
+#  template:
+#    src: "infra-dm.j2"
+#    dest: "{{role_path}}/files/{{item}}.yml"
+#  loop: "{{ groups['switches'] }}"
+
+- name: Generate Device YAML File
+  connection: local
+  template:
+    src: "infra-dm.j2"
+    dest: "{{role_path}}/files/{{inventory_hostname}}.yml"
+
+- name: Read Infra Data Model
+  connection: local
+  include_vars:
+    file: "{{role_path}}/files/{{inventory_hostname}}.yml"
+    name: hostparams
+
+- name: Clear persistent connection
+  connection: local
+  file:
+    state: absent
+    path: "~/.ansible/pc/.ansible_pc_lock_{{ hostvars[inventory_hostname]['ansible_host'] }}"
+  changed_when: False
+  ignore_errors: True
+
+- name: Apply Config
+  eos_config:
+    #lines: "{{ lookup('file', '{{output}}/infra-{{inventory_hostname}}-config.txt') }}"
+    src: "infra-config.j2"
+    match: line
+
+- name: Leaf to k8s nodes bgp config if AS PER RACK model
+  eos_config:
+    lines:
+      - "bgp listen range {{ rackprefixdata|ipsubnet(racklength, (inventory_hostname.split('-')[1]|int) - 1) }} peer-group K8S_{{inventory_hostname}} remote-as {{hostvars[inventory_hostname]['asn']}}"
+    match: line
+    parents: "router bgp {{hostvars[inventory_hostname]['asn']}}"
+  when: inventory_hostname | regex_search('^leaf') and as_per_rack_model
+
+- name: Output VLAN for leaf-1
+  eos_vlan:
+    vlan_id: 45
+    name: internet
+    state: active
+    interfaces:
+      - Ethernet4
+  when: inventory_hostname | regex_search('^leaf-1$')
+
+- name: Et4 switchport trunk vlan 45
+  eos_config:
+    lines:
+      - "switchport trunk allowed vlan 45"
+      - "switchport mode trunk"
+    parents: "interface Ethernet4"
+  when: inventory_hostname | regex_search('^leaf-1$')
+
+- name: Output VLAN ip address assignment
+  eos_config:
+    lines: "ip address 172.16.64.254/24"
+    parents: "interface Vlan45"
+  when: inventory_hostname | regex_search('^leaf-1$')

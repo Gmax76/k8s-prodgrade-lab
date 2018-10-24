@@ -1,0 +1,47 @@
+---
+
+ansible_python_interpreter: "/usr/bin/env python3"
+
+as_per_rack_model: true
+
+# Kubernetes
+kube_version: 1.11.3
+kube_pkg_dependencies_strict: no
+token: b0f7b8.8d1767876297d85c
+
+# 1.8.x feature: --feature-gates SelfHosting=true
+init_opts: ""
+
+# Any other additional opts you want to add..
+kubeadm_opts: ""
+# For example:
+# kubeadm_opts: '--apiserver-cert-extra-sans "k8s.domain.com,kubernetes.domain.com"'
+
+service_subnet: 10.192.0
+service_cidr: "{{ service_subnet }}.0/12"
+
+pod_network_cidr: "10.208.0.0/16"
+
+enable_dashboard: yes
+
+# A list of insecure registrys you might need to define
+insecure_registrys: ""
+# insecure_registrys: ['gcr.io']
+
+systemd_dir: /etc/systemd/system
+system_env_dir: /etc/sysconfig
+kubeadmin_config: /etc/kubernetes/admin.conf
+
+mgmt_interface: "eth1"
+
+mgmt_mask: "255.255.255.0"
+node_mask: "255.255.255.0"
+
+provisioner: "10.0.5.254"
+provisioner_router: "10.0.5.11"
+dhcp_start_index: "150"
+dhcp_end_index: "200"
+
+proxy_env:
+  http_proxy: "http://{{ provisioner }}:8080"
+  https_proxy: "http://{{ provisioner }}:8080"

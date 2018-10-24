@@ -1,0 +1,103 @@
+{
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "./files/etc/dhcp/dhclient.conf",
+      "destination": "/home/vagrant/dhclient.conf"
+    },
+    {
+      "environment_vars": [
+        "HOME_DIR=/home/vagrant"
+      ],
+      "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
+      "expect_disconnect": true,
+      "scripts": [
+        "../packer-common/scripts/update.sh",
+        "scripts/setup.sh",
+        "../packer-common/scripts/cleanup.sh",
+        "../packer-common/scripts/minimize.sh"
+      ],
+      "type": "shell"
+    }
+  ],
+  "builders": [
+    {
+      "name": "qemu-qcow2",
+      "type": "qemu",
+      "output_directory": "output-qemu-qcow2",
+      "disk_compression": true,
+      "disk_size": 81920,
+      "format": "qcow2",
+      "headless": true,
+      "accelerator": "kvm",
+      "http_directory": "http",
+      "http_port_min": 10082,
+      "http_port_max": 10089,
+      "iso_url": "../packer-trunk-build/output-qemu-qcow2/trunk-qcow2",
+      "iso_checksum_type": "none",
+      "disk_image": "true",
+      "ssh_username": "vagrant",
+      "ssh_password": "vagrant",
+      "ssh_port": 22,
+      "ssh_wait_timeout": "10000s",
+      "shutdown_command": "echo 'vagrant'|sudo -S shutdown -P now",
+      "vm_name": "k8snode-qcow2",
+      "net_device": "virtio-net",
+      "disk_interface": "virtio",
+      "ssh_host_port_min": 3213,
+      "ssh_host_port_max": 3214,
+      "qemuargs": [
+        ["-m", "1024"],
+        ["-smp", "1"],
+        ["-netdev", "user,id=user.0,hostfwd=tcp::3213-:22,hostfwd=tcp::3214-:22,net=10.0.2.0/24"],
+        ["-device", "virtio-net,netdev=user.0"],
+        ["-netdev", "user,id=user.1"],
+        ["-device", "virtio-net,netdev=user.1"]
+      ]
+    },
+   {
+      "name": "qemu-raw",
+      "type": "qemu",
+      "output_directory": "output-qemu-raw",
+      "disk_compression": true,
+      "disk_size": 4096,
+      "format": "raw",
+      "headless": true,
+      "accelerator": "kvm",
+      "http_directory": "http",
+      "http_port_min": 10082,
+      "http_port_max": 10089,
+      "iso_url": "../packer-trunk-build/output-qemu-qcow2/trunk-qcow2",
+      "iso_checksum_type": "none",
+      "disk_image": true,
+      "ssh_username": "vagrant",
+      "ssh_password": "vagrant",
+      "ssh_port": 22,
+      "ssh_wait_timeout": "10000s",
+      "shutdown_command": "echo 'vagrant'|sudo -S shutdown -P now",
+      "vm_name": "k8snode-raw",
+      "net_device": "virtio-net",
+      "disk_interface": "virtio",
+      "ssh_host_port_min": 3215,
+      "ssh_host_port_max": 3216,
+      "qemuargs": [
+        ["-m", "1024"],
+        ["-smp", "1"],
+        ["-netdev", "user,id=user.0,hostfwd=tcp::3215-:22,hostfwd=tcp::3216-:22,net=10.0.2.0/24"],
+        ["-device", "virtio-net,netdev=user.0"],
+        ["-netdev", "user,id=user.1"],
+        ["-device", "virtio-net,netdev=user.1"]
+      ]
+    }
+  ],
+  "post-processors": [
+    {
+      "output": "output-vagrant-qemu/{{.Provider}}-k8snode.box",
+      "type": "vagrant",
+      "keep_input_artifact": true,
+      "only": ["qemu-qcow2"]
+    }
+  ],
+  "variables": {
+  }
+}

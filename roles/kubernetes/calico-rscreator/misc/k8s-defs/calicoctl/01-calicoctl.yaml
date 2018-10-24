@@ -1,0 +1,10 @@
+# Calico Version v3.2.3
+# https://docs.projectcalico.org/v3.2/releases#v3.2.3
+# This manifest includes the following component versions:
+#   calico/ctl:v3.2.3
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: calicoctl
+  namespace: kube-system

@@ -1,0 +1,58 @@
+---
+
+- set_fact:
+    is_vagrant: "{{ lookup('env', 'VAGRANT') }}"
+
+- name: Install required packages
+  register: install_dhcpd_packages
+  include_tasks: pkg.yml
+  tags:
+    - packages
+
+- file:
+    path: /var/lib/dhcp/dhcpd.leases
+    owner: root
+    group: dhcpd
+    mode: 0644
+  register: dhcpd_leases_file_rights
+  tags:
+    - packages
+    - configuration
+
+- name: Produce inventory dhcp reservations
+  template:
+    src: dhcpd.conf.j2
+    dest: /etc/dhcp/dhcpd.conf
+  register: dhcp_resa
+  tags:
+    - configuration
+
+- name: isc-dhcp-server default conf
+  template:
+    src: isc-dhcp-server.j2
+    dest: /etc/default/isc-dhcp-server
+  register: dhcp_default_conf
+  tags:
+    - configuration
+
+- name: Enable and restart isc-dhcp-server
+  systemd:
+    name: isc-dhcp-server
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+  register: started_dhcpd
+  when: dhcp_resa.changed or dhcp_default_conf.changed or dhcpd_leases_file_rights.changed
+  tags:
+    - configuration
+
+- name: Enable and restart isc-dhcp-server
+  systemd:
+    name: isc-dhcp-server
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+  register: started_dhcpd
+  when: install_dhcpd_packages.changed or dhcpd_leases_file_rights
+  tags:
+    - packages

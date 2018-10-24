@@ -1,0 +1,39 @@
+---
+
+- set_fact:
+    proxy_conf: "{{proxy_env if proxy_env is defined else '{\"http_proxy\": \"\", \"https_proxy\": \"\"}'}}"
+  tags:
+    - packages
+
+- name: Install policykit-1
+  when: ansible_os_family == "Debian"
+  apt:
+    name: "policykit-1"
+    state: present
+  environment: "{{proxy_conf}}"
+  tags:
+    - packages
+
+- name: Install isc-dhcp-server
+  when: ansible_os_family == "Debian"
+  apt:
+    name: "isc-dhcp-server"
+    state: present
+  environment: "{{proxy_conf}}"
+  tags:
+    - packages
+
+- name: Install python-netaddr
+  when: ansible_os_family == "Debian"
+  apt:
+    name: "{{ ['python-netaddr', 'python3-netaddr'] }}"
+    state: present
+  environment: "{{proxy_conf}}"
+  tags:
+    - packages
+
+- name: Install netaddr pip module
+  pip:
+    name: netaddr
+  tags:
+    - packages
