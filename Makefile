@@ -5,4 +5,4 @@ sub-make:
 	make -C packer-trunk-build
 	make -C packer-k8snode-build
 	make -C packer-provisioner-build
-	make -C packer-veoslibvirt-build
+	make -C packer-vyos-build
