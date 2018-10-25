@@ -215,12 +215,12 @@ SCRIPT
         if /provisioner/.match(host['name'])
           override.vm.synced_folder '.', '/vagrant', id: "vagrant-root", disabled: true
           override.vm.synced_folder '.', '/provisioning', type: 'rsync',
-            rsync__exclude: [ ".gitignore", ".git/", "./misc", "packer-k8snode-build", "packer-provisioner-build", "packer-trunk-build", "packer-veoslibvirt-build", ".vagrant", "*.qcow2", "*.vmdk", "*.box" ]
+            rsync__exclude: [ ".gitignore", ".git/", "./misc", "packer-common", "packer-k8snode-build", "packer-provisioner-build", "packer-trunk-build", "packer-vyos-build", ".vagrant", "*.qcow2", "*.vmdk", "*.box" ]
         else
-          if /(?i:veos)/.match(host['box']['vbox'])
+          if /(?i:vyos)/.match(host['box']['vbox'])
             override.vm.synced_folder '.', '/vagrant', id: "vagrant-root", disabled: true
             libvirt.disk_bus = 'ide'
-            libvirt.cpus = 2
+            libvirt.cpus = 1
 
             script += <<-SCRIPT
 bash sudo su || bash -c 'sudo su'
@@ -243,17 +243,17 @@ SCRIPT
       srv.vm.provider :virtualbox do |v, override|
         override.vm.box = host["box"]["vbox"]
 
-        if /(?i:veos)/.match(host['box']['vbox'])
+        if /(?i:vyos)/.match(host['box']['vbox'])
           v.customize [
             'modifyvm', :id,
-            '--cpus', '2'
+            '--cpus', '1'
           ]
         end
 
         if /provisioner/.match(host['name'])
           override.vm.synced_folder '.', '/vagrant', id: "vagrant-root", disabled: true
           override.vm.synced_folder '.', '/provisioning', type: 'rsync',
-            rsync__exclude: [ ".gitignore", ".git/", "./misc", "packer-k8snode-build", "packer-provisioner-build", "packer-trunk-build", "packer-veoslibvirt-build", ".vagrant", "*.qcow2", "*.vmdk", "*.box" ]
+            rsync__exclude: [ ".gitignore", ".git/", "./misc", "packer-common", "packer-k8snode-build", "packer-provisioner-build", "packer-trunk-build", "packer-vyos-build", ".vagrant", "*.qcow2", "*.vmdk", "*.box" ]
         else
           override.vm.synced_folder '.', '/vagrant', id: "vagrant-root", disabled: true
         end
@@ -349,16 +349,18 @@ if [ -f /provisioning/ssh-config ]; then
 fi
 SCRIPT
 
-      if /(?i:veos)/.match(host['box']['vbox'])
-        script += <<-SCRIPT
-FastCli -p 15 -c "configure
-hostname $1
-interface Ethernet1
-no switchport
-ip address $2 255.255.255.0
-wr mem"
-SCRIPT
+      if /(?i:vyos)/.match(host['box']['vbox'])
+      script += <<-SCRIPT
+WRAPPER=/opt/vyatta/sbin/vyatta-cfg-cmd-wrapper
 
+${WRAPPER} begin
+${WRAPPER} set system host-name $1
+${WRAPPER} set system static-host-mapping host-name $1 inet $2
+${WRAPPER} set interfaces ethernet eth1 address $2/24
+${WRAPPER} commit
+${WRAPPER} save
+${WRAPPER} end
+SCRIPT
         args.push($mgmtip)
       else
         script += <<-SCRIPT
@@ -367,7 +369,7 @@ SCRIPT
       end
 
       srv.vm.provision "shell" do |s|
-        s.privileged = /(?i:veos)/.match(host['box']['vbox']) ? false : true
+        s.privileged = true
         s.inline = script
         s.args = args
       end

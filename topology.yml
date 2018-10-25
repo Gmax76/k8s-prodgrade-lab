@@ -1,10 +1,9 @@
 ---
 - name: spine-1
-  ram: 2048
+  ram: 1024
   box:
-    vbox: machines/vEOS-lab-4.19.7M-virtualbox.box
-    libvirtbox: libvirt-veos
-#    libvirtbox: machines/vEOS-lab-4.20.7M-combined.box
+    vbox: virtualbox-vyos-1.1.8-amd64
+    libvirtbox: libvirt-vyos-1.1.8-amd64
     libvirtbox_version: 0
   links:
     - name: mgmt
@@ -12,11 +11,10 @@
     - name: S1L1
     - name: S1L2
 - name: leaf-1
-  ram: 2048
+  ram: 1024
   box:
-    vbox: machines/vEOS-lab-4.19.7M-virtualbox.box
-    libvirtbox: libvirt-veos
-#    libvirtbox: machines/vEOS-lab-4.20.7M-combined.box
+    vbox: virtualbox-vyos-1.1.8-amd64
+    libvirtbox: libvirt-vyos-1.1.8-amd64
     libvirtbox_version: 0
   links:
     - name: mgmt
@@ -25,11 +23,10 @@
     - name: RACK1-DATA
     - name: O1L1
 - name: leaf-2
-  ram: 2048
+  ram: 1024
   box:
-    vbox: machines/vEOS-lab-4.19.7M-virtualbox.box
-    libvirtbox: libvirt-veos
-#    libvirtbox: machines/vEOS-lab-4.20.7M-combined.box
+    vbox: virtualbox-vyos-1.1.8-amd64
+    libvirtbox: libvirt-vyos-1.1.8-amd64
     libvirtbox_version: 0
   links:
     - name: mgmt
